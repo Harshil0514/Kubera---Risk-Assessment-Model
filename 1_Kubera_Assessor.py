@@ -171,8 +171,8 @@ if st.button("Assess Risk"):
             fig = plt.gcf() 
             
             # Give it some breathing room so it's not cut off
-            fig.set_figheight(3.5) 
-            fig.set_figwidth(12)
+            fig.set_figheight(5) 
+            fig.set_figwidth(15)
             plt.tight_layout() 
             
             # Pass the FIGURE to st.pyplot
