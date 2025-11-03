@@ -142,7 +142,7 @@ if st.button("Assess Risk"):
                 st.write(f"Interest Coverage Ratio: {interest_coverage_ratio:.2f}")
                 st.write(f"Net Profit Margin: {net_profit_margin:.2f}")
 
-            # --- 6. SHAP Explainability Plot (FINAL FIX) ---
+           # --- 6. SHAP Explainability Plot (FINAL FIX) ---
             st.subheader("Why did the model decide this?")
             st.write("This plot shows which features contributed to the final risk score.")
             
@@ -156,20 +156,27 @@ if st.button("Assess Risk"):
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # NEW: Use st.pyplot() but create the figure first.
-            # This is the most reliable way for matplotlib plots.
-            fig, ax = plt.subplots(figsize=(10, 2.5)) # Create a figure and axis
+            # NEW: Use st.pyplot() by capturing the figure shap creates.
             
+            # Tell shap to create the plot using matplotlib
             shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
                 features=scaled_features_df.iloc[0], # Pass the first (and only) row
                 matplotlib=True, # Tell shap to use matplotlib
-                show=False,      # Don't try to show it
-                ax=ax            # Tell shap which axis to draw on
+                show=False       # Don't let it try to show the plot
             )
             
-            st.pyplot(fig, bbox_inches='tight') # Pass the FIGURE to st.pyplot
+            # Get the current figure that shap just created
+            fig = plt.gcf() 
+            
+            # Give it some breathing room so it's not cut off
+            fig.set_figheight(2) 
+            fig.set_figwidth(10)
+            plt.tight_layout() 
+            
+            # Pass the FIGURE to st.pyplot
+            st.pyplot(fig, bbox_inches='tight') 
             plt.close(fig) # Close the figure to save memory
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
