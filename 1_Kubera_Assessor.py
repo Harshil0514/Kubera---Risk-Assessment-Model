@@ -108,7 +108,7 @@ def get_financial_data(ticker, api_key):
         return None, None
 
 # --- 6. Create the App Header ---
-st.image("static/Kubera_logo.png", width=150) # Make sure your logo is named this
+st.image("static/logo.png", width=150) # Make sure your logo is named this
 st.title("KUBERA: Corporate Risk Assessment")
 st.write("Enter a company's stock ticker to predict its bankruptcy risk.")
 
