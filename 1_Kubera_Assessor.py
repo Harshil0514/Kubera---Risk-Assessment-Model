@@ -157,7 +157,8 @@ if st.button("Assess Risk"):
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
             # NEW: Use st.pyplot() by capturing the figure shap creates.
-            
+            # 1. Set a smaller font size *before* creating the plot
+            plt.rcParams.update({'font.size': 9})
             # Tell shap to create the plot using matplotlib
             shap.force_plot(
                 base_value=base_value_for_class_1,
