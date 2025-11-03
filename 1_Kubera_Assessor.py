@@ -197,4 +197,4 @@ if st.button("Assess Risk"):
                 shap_values=shap_values_for_class_1,
                 features=scaled_features_df
             ))
-            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")git add 1_Kubera_Assessor
+            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
