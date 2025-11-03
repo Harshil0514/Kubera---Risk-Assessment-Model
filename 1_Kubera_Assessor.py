@@ -146,20 +146,25 @@ if st.button("Assess Risk"):
             st.subheader("Why did the model decide this?")
             st.write("This plot shows which features contributed to the final risk score.")
             
+            # Convert scaled features to a DataFrame for the explainer
             scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
+            
+            # Calculate SHAP values
             shap_values_object = explainer(scaled_features_df)
             
+            # We want the values for Class 1 (Bankruptcy)
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # Create the plot as an HTML object
-            plot_html = shap.force_plot(
+            # NEW: Create the plot as a ForceVisualizer object
+            # We use shap.plots.force (the underlying function)
+            plot_object = shap.plots.force(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
-                features=scaled_features_df
+                features=scaled_features_df.iloc[0] # Pass the first (and only) row as a Series
             )
             
-            # Render the HTML object using st.components.v1.html
-            components.html(str(plot_html.data), height=150, scrolling=True)
+            # NEW: Render the plot by calling its .html() method
+            components.html(plot_object.html(), height=150, scrolling=True)
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
