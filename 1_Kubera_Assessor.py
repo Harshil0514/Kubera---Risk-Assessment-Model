@@ -176,19 +176,23 @@ if st.button("Assess Risk"):
                 st.write(f"Interest Coverage Ratio: {interest_coverage_ratio:.2f}")
                 st.write(f"Net Profit Margin: {net_profit_margin:.2f}")
 
-            # --- 6. SHAP Explainability Plot (FINAL BUG FIX) ---
+            # --- 6. SHAP Explainability Plot (FINAL FIX) ---
             st.subheader("Why did the model decide this?")
             st.write("This plot shows which features contributed to the final risk score.")
             
             # Convert scaled features to a DataFrame for the explainer
             scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
             
-            # Get SHAP values (this returns a list: [class_0_values, class_1_values])
-            shap_values_list = explainer(scaled_features_df)
+            # Calculate SHAP values for our single prediction
+            # This returns a single SHAP "Explanation" object
+            shap_values_object = explainer(scaled_features_df)
             
             # We want the values for Class 1 (Bankruptcy)
-            shap_values_for_class_1 = shap_values_list[1][0,:]
-            base_value_for_class_1 = explainer.expected_value[1]
+            # shap_values_object.values[0,:,1] = values for the 1st prediction, all features, for class 1
+            shap_values_for_class_1 = shap_values_object.values[0,:,1]
+            
+            # Get the base value for Class 1
+            base_value_for_class_1 = shap_values_object.base_values[0,1]
 
             # Create the force plot
             fig, ax = plt.subplots()
