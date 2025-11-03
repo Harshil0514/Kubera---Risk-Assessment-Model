@@ -118,22 +118,41 @@ st.write("Enter a company's stock ticker to predict its bankruptcy risk.")
 st.sidebar.header("Enter Ticker & API Key:")
 ticker = st.sidebar.text_input("Company Ticker (e.g., AAPL)").upper()
 
-# This is the function to check if we're deployed or local
-def check_if_secrets_exist():
-    # hasattr(st, 'secrets') checks if the st.secrets feature exists
-    # and st.secrets.get('ALPHA_VANTAGE_KEY') checks if our key is set
-    return hasattr(st, 'secrets') and st.secrets.get('ALPHA_VANTAGE_KEY')
-
-# Check if we are running on Streamlit Cloud (deployed)
-if check_if_secrets_exist():
-    st.sidebar.success("API Key loaded from Secrets!", icon="✅")
-    api_key = st.secrets['ALPHA_VANTAGE_KEY']
-else:
-    # Otherwise, show the text box for local testing
-    st.sidebar.markdown("""
-    [Get your free Alpha Vantage API key](https://www.alphavantage.co/support/#api-key)
-    """)
-    api_key = st.sidebar.text_input("Alpha Vantage API Key", type="password")
+# --- 5. API Helper Function (FMP Version) ---
+def get_financial_data(ticker, api_key):
+    try:
+        # FMP has separate endpoints for Income & Balance Sheet
+        # We add 'limit=1' to get only the most recent annual report
+        
+        # 1. Get Income Statement
+        url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{ticker}?limit=1&apikey={api_key}'
+        r_income = requests.get(url_income)
+        data_income = r_income.json()[0] # Get the first (most recent) report
+        
+        # 2. Get Balance Sheet
+        url_balance = f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}?limit=1&apikey={api_key}'
+        r_balance = requests.get(url_balance)
+        data_balance = r_balance.json()[0] # Get the first (most recent) report
+        
+        # 3. Extract the 8 numbers we need
+        data = {
+            "net_income": float(data_income.get('netIncome', 0)),
+            "total_revenue": float(data_income.get('revenue', 0)), # FMP calls it 'revenue'
+            "ebit": float(data_income.get('ebitda', 0)) - float(data_income.get('depreciationAndAmortization', 0)), # Calculate EBIT
+            "interest_expense": float(data_income.get('interestExpense', 1e-6)),
+            "current_assets": float(data_balance.get('totalCurrentAssets', 0)),
+            "current_liabilities": float(data_balance.get('totalCurrentLiabilities', 0)),
+            "total_debt": float(data_balance.get('longTermDebt', 0)) + float(data_balance.get('shortTermDebt', 0)),
+            "total_equity": float(data_balance.get('totalStockholdersEquity', 0)) # FMP calls it this
+        }
+        
+        if data["interest_expense"] == 0: data["interest_expense"] = 1e-6
+            
+        return data, data_income.get('fillingDate', 'N/A')
+        
+    except Exception as e:
+        print(f"API Error: {e}")
+        return None, None
 # --- 8. Create the "Assess Risk" Button and Logic ---
 if st.button("Assess Risk"):
     if not api_key or not ticker:
