@@ -55,11 +55,10 @@ model, scaler, explainer, feature_names = load_assets()
 # --- 5. API Helper Function (FMP Version) ---
 def get_financial_data(ticker, api_key):
     try:
-        url_income = f'https://financialmodelingprep.com/api/v4/income-statement/{ticker}?limit=1&apikey={api_key}'
+        url_income = f'https://financialmodelingprep.com/stable/income-statement?symbol={ticker}&limit=1&apikey={api_key}'
         r_income = requests.get(url_income)
         data_income = r_income.json()[0]
-        
-        url_balance = f'https://financialmodelingprep.com/api/v4/balance-sheet-statement/{ticker}?limit=1&apikey={api_key}'
+        url_balance = f'https://financialmodelingprep.com/stable/balance-sheet-statement?symbol={ticker}&limit=1&apikey={api_key}'
         r_balance = requests.get(url_balance)
         data_balance = r_balance.json()[0]
         
