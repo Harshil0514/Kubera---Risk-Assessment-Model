@@ -6,153 +6,102 @@ import pandas as pd
 import requests
 import shap
 import matplotlib.pyplot as plt
-import streamlit.components.v1 as components  # <-- ADD THIS
-
+import streamlit.components.v1 as components
 
 # --- 2. Set Page Configuration ---
 st.set_page_config(
     page_title="Kubera Risk Assessor",
-    page_icon="", # You can use a fire emoji or your logo path
+    page_icon="🔥",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # --- 3. Inject Special CSS ---
-# This CSS is for the premium button and metric box styles
 special_css = """
 <style>
 /* Main "Assess Risk" button */
 .stButton>button {
-    background-color: #004E9A; /* A premium, deep blue */
-    color: #FFFFFF;
-    border: none;
-    border-radius: 8px; /* Rounded corners */
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 4px 14px 0 rgba(0, 78, 154, 0.3); /* A subtle shadow */
-    transition: all 0.3s ease; /* Smooth hover effect */
+    background-color: #004E9A; color: #FFFFFF; border: none;
+    border-radius: 8px; padding: 10px 20px; font-size: 16px;
+    font-weight: bold; box-shadow: 0 4px 14px 0 rgba(0, 78, 154, 0.3);
+    transition: all 0.3s ease;
 }
 .stButton>button:hover {
-    background-color: #003366; /* Darker blue on hover */
+    background-color: #003366;
     box-shadow: 0 6px 20px 0 rgba(0, 51, 102, 0.4);
 }
-
 /* Metric (the result box) */
 [data-testid="stMetric"] {
-    background-color: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Soft, premium shadow */
-    color: #333333; /* Fixes faint text */
+    background-color: #FFFFFF; border: 1px solid #E0E0E0;
+    border-radius: 10px; padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); color: #333333;
 }
-
-/* Fixes metric label color */
-[data-testid="stMetricLabel"] {
-    color: #555555;
-}
+[data-testid="stMetricLabel"] { color: #555555; }
 </style>
 """
 st.markdown(special_css, unsafe_allow_html=True)
 
-
 # --- 4. Load ALL Saved Model Assets ---
 @st.cache_resource
 def load_assets():
-    print("Loading all model assets...")
     model = joblib.load('model/risk_model.pkl')
     scaler = joblib.load('model/scaler.pkl')
     explainer = joblib.load('model/explainer.pkl')
     feature_names = joblib.load('model/feature_names.pkl')
-    print("Assets loaded.")
     return model, scaler, explainer, feature_names
 
 model, scaler, explainer, feature_names = load_assets()
 
-# --- 5. API Helper Function ---
-# This function calls the Alpha Vantage API
+# --- 5. API Helper Function (FMP Version) ---
 def get_financial_data(ticker, api_key):
     try:
-        # 1. Get Income Statement
-        url_income = f'https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol={ticker}&apikey={api_key}'
+        url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{ticker}?limit=1&apikey={api_key}'
         r_income = requests.get(url_income)
-        data_income = r_income.json()
+        data_income = r_income.json()[0]
         
-        # 2. Get Balance Sheet
-        url_balance = f'https://www.alphavantage.co/query?function=BALANCE_SHEET&symbol={ticker}&apikey={api_key}'
+        url_balance = f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}?limit=1&apikey={api_key}'
         r_balance = requests.get(url_balance)
-        data_balance = r_balance.json()
-        
-        # 3. Extract the 8 numbers we need
-        report_income = data_income['annualReports'][0]
-        report_balance = data_balance['annualReports'][0]
+        data_balance = r_balance.json()[0]
         
         data = {
-            "net_income": float(report_income.get('netIncome', 0)),
-            "total_revenue": float(report_income.get('totalRevenue', 0)),
-            "ebit": float(report_income.get('ebit', 0)),
-            "interest_expense": float(report_income.get('interestExpense', 1e-6)), # Default to tiny number
-            "current_assets": float(report_balance.get('totalCurrentAssets', 0)),
-            "current_liabilities": float(report_balance.get('totalCurrentLiabilities', 0)),
-            "total_debt": float(report_balance.get('longTermDebt', 0)) + float(report_balance.get('shortTermDebt', 0)),
-            "total_equity": float(report_balance.get('totalShareholderEquity', 0))
+            "net_income": float(data_income.get('netIncome', 0)),
+            "total_revenue": float(data_income.get('revenue', 0)),
+            "ebit": float(data_income.get('ebitda', 0)) - float(data_income.get('depreciationAndAmortization', 0)),
+            "interest_expense": float(data_income.get('interestExpense', 1e-6)),
+            "current_assets": float(data_balance.get('totalCurrentAssets', 0)),
+            "current_liabilities": float(data_balance.get('totalCurrentLiabilities', 0)),
+            "total_debt": float(data_balance.get('longTermDebt', 0)) + float(data_balance.get('shortTermDebt', 0)),
+            "total_equity": float(data_balance.get('totalStockholdersEquity', 0))
         }
         
-        # Handle cases where interest expense might be zero
-        if data["interest_expense"] == 0:
-            data["interest_expense"] = 1e-6
-            
-        return data, report_income.get('fiscalDateEnding', 'N/A')
+        if data["interest_expense"] == 0: data["interest_expense"] = 1e-6
+        return data, data_income.get('fillingDate', 'N/A')
         
     except Exception as e:
         print(f"API Error: {e}")
         return None, None
 
 # --- 6. Create the App Header ---
-st.image("static/logo.png", width=150) # Make sure your logo is named this
+st.image("static/logo.png", width=150) # Using the new 'logo.png' name
 st.title("KUBERA: Corporate Risk Assessment")
 st.write("Enter a company's stock ticker to predict its bankruptcy risk.")
 
 # --- 7. Create the "Smart" Sidebar Input Form ---
 st.sidebar.header("Enter Ticker & API Key:")
 ticker = st.sidebar.text_input("Company Ticker (e.g., AAPL)").upper()
-api_key = "" # <-- ADD THIS LINE to initialize the variable
-# --- 5. API Helper Function (FMP Version) ---
-def get_financial_data(ticker, api_key):
-    try:
-        # FMP has separate endpoints for Income & Balance Sheet
-        # We add 'limit=1' to get only the most recent annual report
-        
-        # 1. Get Income Statement
-        url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{ticker}?limit=1&apikey={api_key}'
-        r_income = requests.get(url_income)
-        data_income = r_income.json()[0] # Get the first (most recent) report
-        
-        # 2. Get Balance Sheet
-        url_balance = f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}?limit=1&apikey={api_key}'
-        r_balance = requests.get(url_balance)
-        data_balance = r_balance.json()[0] # Get the first (most recent) report
-        
-        # 3. Extract the 8 numbers we need
-        data = {
-            "net_income": float(data_income.get('netIncome', 0)),
-            "total_revenue": float(data_income.get('revenue', 0)), # FMP calls it 'revenue'
-            "ebit": float(data_income.get('ebitda', 0)) - float(data_income.get('depreciationAndAmortization', 0)), # Calculate EBIT
-            "interest_expense": float(data_income.get('interestExpense', 1e-6)),
-            "current_assets": float(data_balance.get('totalCurrentAssets', 0)),
-            "current_liabilities": float(data_balance.get('totalCurrentLiabilities', 0)),
-            "total_debt": float(data_balance.get('longTermDebt', 0)) + float(data_balance.get('shortTermDebt', 0)),
-            "total_equity": float(data_balance.get('totalStockholdersEquity', 0)) # FMP calls it this
-        }
-        
-        if data["interest_expense"] == 0: data["interest_expense"] = 1e-6
-            
-        return data, data_income.get('fillingDate', 'N/A')
-        
-    except Exception as e:
-        print(f"API Error: {e}")
-        return None, None
+api_key = "" # Initialize api_key
+
+try:
+    # Try to get the key from Streamlit's secrets (for deployed app)
+    api_key = st.secrets['FMP_KEY']
+    st.sidebar.success("API Key loaded from Secrets!", icon="✅")
+except:
+    # If it fails (we are local), show the text box
+    st.sidebar.markdown("""
+    [Get your free FMP API key](https://site.financialmodelingprep.com/developer)
+    """)
+    api_key = st.sidebar.text_input("Financial Modeling Prep API Key", type="password")
+
 # --- 8. Create the "Assess Risk" Button and Logic ---
 if st.button("Assess Risk"):
     if not api_key or not ticker:
@@ -162,7 +111,7 @@ if st.button("Assess Risk"):
             raw_data, report_date = get_financial_data(ticker, api_key)
         
         if raw_data is None:
-            st.error("Could not fetch data. Check the Ticker or API Key. (Note: Free API is limited to 5 calls/min).")
+            st.error("Could not fetch data. Check the Ticker or API Key. (Note: Free API is limited).")
         else:
             st.success(f"Successfully fetched data from report date: {report_date}")
             
@@ -184,12 +133,9 @@ if st.button("Assess Risk"):
             st.subheader(f"Risk Assessment Result for {ticker}:")
             st.metric(label="Probability of Bankruptcy", value=f"{prob_of_default * 100:.2f}%")
 
-            if prob_of_default > 0.5:
-                st.error("Risk Level: High Risk")
-            elif prob_of_default > 0.2:
-                st.warning("Risk Level: Moderate Risk")
-            else:
-                st.success("Risk Level: Low Risk")
+            if prob_of_default > 0.5: st.error("Risk Level: High Risk")
+            elif prob_of_default > 0.2: st.warning("Risk Level: Moderate Risk")
+            else: st.success("Risk Level: Low Risk")
 
             with st.expander("Show Calculated Ratios"):
                 st.write(f"Current Ratio: {current_ratio:.2f}")
@@ -201,25 +147,20 @@ if st.button("Assess Risk"):
             st.subheader("Why did the model decide this?")
             st.write("This plot shows which features contributed to the final risk score.")
             
-            # Convert scaled features to a DataFrame for the explainer
             scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
-            
-            # Calculate SHAP values
             shap_values_object = explainer(scaled_features_df)
             
-            # We want the values for Class 1 (Bankruptcy)
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # NEW: Create the plot as an HTML object
+            # Create the plot as an HTML object
             plot_html = shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
                 features=scaled_features_df
             )
             
-            # NEW: Render the HTML object using st.components.v1.html
-            # .data gets the raw HTML, and we set a height
+            # Render the HTML object using st.components.v1.html
             components.html(str(plot_html.data), height=150, scrolling=True)
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
