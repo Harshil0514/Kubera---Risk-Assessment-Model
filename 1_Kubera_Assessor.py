@@ -201,6 +201,6 @@ if st.button("Assess Risk"):
             
             # NEW: Render the HTML object using st.components.v1.html
             # .data gets the raw HTML, and we set a height
-            components.html(plot_html.data, height=150, scrolling=True)
+            components.html(str(plot_html.data), height=150, scrolling=True)
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
