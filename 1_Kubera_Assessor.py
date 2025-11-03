@@ -8,7 +8,6 @@ import shap
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components  # <-- ADD THIS
 
-shap.initjs()
 
 # --- 2. Set Page Configuration ---
 st.set_page_config(
