@@ -1,0 +1,9 @@
+streamlit
+pandas
+scikit-learn
+joblib
+numpy
+xgboost         # <-- NEW: The pro-level model
+shap            # <-- NEW: For explainability (XAI)
+requests        # <-- NEW: To call the financial API
+matplotlib      # <-- NEW: SHAP needs this to draw plots

@@ -1,0 +1,17 @@
+# This file tells Streamlit to always use our theme.
+
+[theme]
+# Always use the "light" theme as the base.
+base = "light"
+
+# Main page background
+backgroundColor = "#F8F7F4" # The light beige
+
+# Sidebar background
+secondaryBackgroundColor = "#FFFFFF" # The clean white
+
+# Text color for main page
+textColor = "#333333" # Dark grey
+
+# We can set the font here too
+font = "serif"
