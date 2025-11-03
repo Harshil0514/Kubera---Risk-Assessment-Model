@@ -183,25 +183,18 @@ if st.button("Assess Risk"):
             # Convert scaled features to a DataFrame for the explainer
             scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
             
-            # Calculate SHAP values for our single prediction
-            # This returns a single SHAP "Explanation" object
+            # Calculate SHAP values
             shap_values_object = explainer(scaled_features_df)
             
             # We want the values for Class 1 (Bankruptcy)
-            # shap_values_object.values[0,:,1] = values for the 1st prediction, all features, for class 1
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
-            
-            # Get the base value for Class 1
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # Create the force plot
-            fig, ax = plt.subplots()
-            shap.force_plot(
+            # NEW: Use st.shap() to render the plot directly.
+            # This is the native, reliable way.
+            st.shap(shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
-                features=scaled_features_df,
-                matplotlib=True,
-                show=False
-            )
-            st.pyplot(fig, bbox_inches='tight')
-            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
+                features=scaled_features_df
+            ))
+            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")git add 1_Kubera_Assessor
