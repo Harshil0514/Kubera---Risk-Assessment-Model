@@ -117,7 +117,7 @@ st.write("Enter a company's stock ticker to predict its bankruptcy risk.")
 # --- 7. Create the "Smart" Sidebar Input Form ---
 st.sidebar.header("Enter Ticker & API Key:")
 ticker = st.sidebar.text_input("Company Ticker (e.g., AAPL)").upper()
-
+api_key = "" # <-- ADD THIS LINE to initialize the variable
 # --- 5. API Helper Function (FMP Version) ---
 def get_financial_data(ticker, api_key):
     try:
