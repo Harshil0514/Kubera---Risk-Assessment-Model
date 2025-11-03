@@ -6,6 +6,9 @@ import pandas as pd
 import requests
 import shap
 import matplotlib.pyplot as plt
+import streamlit.components.v1 as components  # <-- ADD THIS
+
+shap.initjs()
 
 # --- 2. Set Page Configuration ---
 st.set_page_config(
@@ -190,11 +193,15 @@ if st.button("Assess Risk"):
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # NEW: Use st.shap() to render the plot directly.
-            # This is the native, reliable way.
-            st.shap(shap.force_plot(
+            # NEW: Create the plot as an HTML object
+            plot_html = shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
                 features=scaled_features_df
-            ))
+            )
+            
+            # NEW: Render the HTML object using st.components.v1.html
+            # .data gets the raw HTML, and we set a height
+            components.html(plot_html.data, height=150, scrolling=True)
+            
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
