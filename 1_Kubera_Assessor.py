@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 # --- 2. Set Page Configuration ---
 st.set_page_config(
     page_title="Kubera Risk Assessor",
-    page_icon="🔥",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -170,7 +170,7 @@ if st.button("Assess Risk"):
             # --- FIX FOR OVERLAP & READABILITY ---
             
             # 1. Set a smaller font size *before* creating the plot
-            plt.rcParams.update({'font.size': 8}) # Small font
+            plt.rcParams.update({'font.size': 8.5}) # Small font
 
             # 2. Tell shap to create the plot
             shap.force_plot(
@@ -180,19 +180,19 @@ if st.button("Assess Risk"):
                 features=unscaled_features_df.iloc[0], 
                 feature_names=unscaled_features_df.columns,
                 matplotlib=True,
-                show=False,
-                text_rotation=10 # Angle the text slightly
+                show=False
+                # We removed text_rotation, as it caused overlaps
             )
             
             # 3. Get the current figure that shap just created
             fig = plt.gcf() 
             
-            # 4. Set our larger dimensions
-            fig.set_figheight(3) 
-            fig.set_figwidth(12) 
+            # 4. Set larger dimensions to give it room
+            fig.set_figheight(4)  # More vertical room
+            fig.set_figwidth(13) # More horizontal room
             
             # 5. Pass the FIGURE to st.pyplot
-            st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
+            st.pyplot(fig, bbox_inches='tight', pad_inches=0.3) 
             
             # 6. Reset font size to default (good practice)
             plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
@@ -202,5 +202,3 @@ if st.button("Assess Risk"):
             # --- END OF FIX ---
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
-            
-            
