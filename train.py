@@ -7,17 +7,38 @@ import xgboost as xgb
 import shap
 import numpy as np
 
-print("Starting model training with XGBoost and SHAP...")
+print("Starting model training with REALISTIC data...")
 
-# --- 2. Create Sample Data ---
+# --- 2. Generate REALISTIC Sample Data (5,000 samples) ---
+np.random.seed(42)
+num_samples = 5000
+
+# Generate data for "Healthy" companies (Class 0)
+healthy_current_ratio = np.random.normal(loc=2.5, scale=0.8, size=num_samples // 2)
+healthy_debt_to_equity = np.random.normal(loc=0.5, scale=0.3, size=num_samples // 2)
+healthy_interest_coverage = np.random.normal(loc=8.0, scale=2.0, size=num_samples // 2)
+healthy_net_profit_margin = np.random.normal(loc=0.15, scale=0.05, size=num_samples // 2)
+healthy_went_bankrupt = np.zeros(num_samples // 2, dtype=int)
+
+# Generate data for "At-Risk" companies (Class 1)
+at_risk_current_ratio = np.random.normal(loc=1.0, scale=0.5, size=num_samples // 2)
+at_risk_debt_to_equity = np.random.normal(loc=2.0, scale=0.7, size=num_samples // 2)
+at_risk_interest_coverage = np.random.normal(loc=1.5, scale=1.0, size=num_samples // 2)
+at_risk_net_profit_margin = np.random.normal(loc=-0.05, scale=0.05, size=num_samples // 2)
+at_risk_went_bankrupt = np.ones(num_samples // 2, dtype=int)
+
+# Combine the data
 data = {
-    'current_ratio': [2.5, 1.1, 0.8, 3.0, 1.5, 0.5, 2.2, 1.9, 0.9, 2.8],
-    'debt_to_equity': [0.5, 1.8, 2.5, 0.3, 1.2, 3.0, 0.8, 1.0, 2.2, 0.4],
-    'interest_coverage_ratio': [8.0, 2.1, 0.9, 10.0, 3.5, -1.0, 6.0, 4.0, 1.5, 9.0],
-    'net_profit_margin': [0.15, 0.02, -0.05, 0.20, 0.08, -0.10, 0.12, 0.09, 0.01, 0.18],
-    'went_bankrupt': [0, 1, 1, 0, 0, 1, 0, 0, 1, 0] # 0=No, 1=Yes
+    'current_ratio': np.concatenate([healthy_current_ratio, at_risk_current_ratio]),
+    'debt_to_equity': np.concatenate([healthy_debt_to_equity, at_risk_debt_to_equity]),
+    'interest_coverage_ratio': np.concatenate([healthy_interest_coverage, at_risk_interest_coverage]),
+    'net_profit_margin': np.concatenate([healthy_net_profit_margin, at_risk_net_profit_margin]),
+    'went_bankrupt': np.concatenate([healthy_went_bankrupt, at_risk_went_bankrupt])
 }
 df = pd.DataFrame(data)
+df = df.sample(frac=1).reset_index(drop=True) # Shuffle the data
+
+print(f"Generated {len(df)} realistic training samples.")
 
 # --- 3. Define Features (X) and Target (y) ---
 features = ['current_ratio', 'debt_to_equity', 'interest_coverage_ratio', 'net_profit_margin']
@@ -32,16 +53,12 @@ X_scaled = scaler.fit_transform(X)
 
 # --- 5. Train the XGBoost Model ---
 model = xgb.XGBClassifier(base_score=0.5, use_label_encoder=False, eval_metric='logloss')
-model.fit(X_scaled, y) # Train the new model
-print("XGBoost model has been trained successfully.")
+model.fit(X_scaled, y)
+print("XGBoost model has been trained successfully on 5,000 samples.")
 
-# --- 6. Create and Save SHAP Explainer (FINAL BUG FIX) ---
-# We convert our scaled data to a DataFrame, as shap expects.
+# --- 6. Create and Save SHAP Explainer ---
 X_scaled_df = pd.DataFrame(X_scaled, columns=features)
-    
-# We pass the model's PREDICTION FUNCTION (model.predict_proba)
-# This is the most robust way and avoids all compatibility bugs.
-explainer = shap.Explainer(model.predict_proba, X_scaled_df)
+explainer = shap.Explainer(model.predict_proba, X_scaled_df.sample(200)) # Use 200 samples for explainer background
 print("SHAP explainer created successfully.")
 
 # --- 7. Save Everything to the 'model/' folder ---
@@ -51,4 +68,4 @@ joblib.dump(scaler, 'model/scaler.pkl')
 joblib.dump(explainer, 'model/explainer.pkl')
 joblib.dump(features, 'model/feature_names.pkl')
 
-print("All model assets saved to 'model/' folder.")
+print("All new model assets saved to 'model/' folder.")
