@@ -120,12 +120,26 @@ if st.button("Assess Risk"):
             interest_coverage_ratio = raw_data['ebit'] / (raw_data['interest_expense'] + 1e-6)
             net_profit_margin = raw_data['net_income'] / (raw_data['total_revenue'] + 1e-6)
 
-            # 3. Prepare Data for Model
-            features = np.array([current_ratio, debt_to_equity, interest_coverage_ratio, net_profit_margin])
-            scaled_features = scaler.transform(features.reshape(1, -1))
+            # 3. Prepare Data for Model & Plot
+            
+            # Create a DataFrame for the UN-SCALED values (for the plot)
+            # We round them to 2 decimal places for a clean look
+            unscaled_data = {
+                'current_ratio': [round(current_ratio, 2)],
+                'debt_to_equity': [round(debt_to_equity, 2)],
+                'interest_coverage_ratio': [round(interest_coverage_ratio, 2)],
+                'net_profit_margin': [round(net_profit_margin, 2)]
+            }
+            unscaled_features_df = pd.DataFrame(unscaled_data, columns=feature_names)
+            
+            # Create a DataFrame for the SCALED values (for the model & explainer)
+            # Note: We scale the un-rounded values for accuracy
+            unrounded_features = np.array([current_ratio, debt_to_equity, interest_coverage_ratio, net_profit_margin])
+            scaled_features = scaler.transform(unrounded_features.reshape(1, -1))
+            scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
 
             # 4. Make Prediction
-            prediction_prob = model.predict_proba(scaled_features)
+            prediction_prob = model.predict_proba(scaled_features_df)
             prob_of_default = prediction_prob[0][1]
             
             # --- 5. Display the Result ---
@@ -146,38 +160,47 @@ if st.button("Assess Risk"):
             st.subheader("Why did the model decide this?")
             st.write("This plot shows which features contributed to the final risk score.")
             
-            # Convert scaled features to a DataFrame for the explainer
-            scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
-            
-            # Calculate SHAP values
+            # Calculate SHAP values (explainer needs the scaled DataFrame)
             shap_values_object = explainer(scaled_features_df)
             
             # We want the values for Class 1 (Bankruptcy)
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
             base_value_for_class_1 = shap_values_object.base_values[0,1]
 
-            # NEW: Use st.pyplot() by capturing the figure shap creates.
+            # --- FIX FOR OVERLAP & READABILITY ---
+            
             # 1. Set a smaller font size *before* creating the plot
-            plt.rcParams.update({'font.size': 9})
-            # Tell shap to create the plot using matplotlib
+            plt.rcParams.update({'font.size': 8}) # Small font
+
+            # 2. Tell shap to create the plot
             shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
-                features=scaled_features_df.iloc[0], # Pass the first (and only) row
-                matplotlib=True, # Tell shap to use matplotlib
-                show=False       # Don't let it try to show the plot
+                # Pass the CLEAN, UN-SCALED features for display
+                features=unscaled_features_df.iloc[0], 
+                feature_names=unscaled_features_df.columns,
+                matplotlib=True,
+                show=False,
+                text_rotation=10 # Angle the text slightly
             )
             
-            # Get the current figure that shap just created
+            # 3. Get the current figure that shap just created
             fig = plt.gcf() 
             
-            # Give it some breathing room so it's not cut off
-            fig.set_figheight(5) 
-            fig.set_figwidth(15)
-            plt.tight_layout() 
+            # 4. Set our larger dimensions
+            fig.set_figheight(3) 
+            fig.set_figwidth(12) 
             
-            # Pass the FIGURE to st.pyplot
-            st.pyplot(fig, bbox_inches='tight') 
-            plt.close(fig) # Close the figure to save memory
+            # 5. Pass the FIGURE to st.pyplot
+            st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
+            
+            # 6. Reset font size to default (good practice)
+            plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
+            
+            plt.close(fig) # Close the figure
+            
+            # --- END OF FIX ---
             
             st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
+            
+            
