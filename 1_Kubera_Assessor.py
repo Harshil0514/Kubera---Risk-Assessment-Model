@@ -56,8 +56,9 @@ model, scaler, explainer, feature_names = load_assets()
 def get_financial_data(ticker, api_key):
     try:
         url_income = f'https://financialmodelingprep.com/stable/income-statement?symbol={ticker}&limit=1&apikey={api_key}'
-        r_income = requests.get(url_income)
+        r_balance = requests.get(url_income)
         data_income = r_income.json()[0]
+        
         url_balance = f'https://financialmodelingprep.com/stable/balance-sheet-statement?symbol={ticker}&limit=1&apikey={api_key}'
         r_balance = requests.get(url_balance)
         data_balance = r_balance.json()[0]
@@ -81,124 +82,170 @@ def get_financial_data(ticker, api_key):
         return None, None
 
 # --- 6. Create the App Header ---
-st.image("static/logo.png", width=150) # Using the new 'logo.png' name
+st.image("static/logo.png", width=150)
 st.title("KUBERA: Corporate Risk Assessment")
-st.write("Enter a company's stock ticker to predict its bankruptcy risk.")
+st.write("Assess a company's bankruptcy risk using a live stock ticker or by entering financial ratios manually.")
 
-# --- 7. Create the "Smart" Sidebar Input Form ---
-st.sidebar.header("Enter Ticker & API Key:")
-ticker = st.sidebar.text_input("Company Ticker (e.g., AAPL)").upper()
-api_key = "" # Initialize api_key
+# --- 7. NEW: Create Tabs for Ticker vs. Manual ---
+tab1, tab2 = st.tabs(["Assess by Ticker", "Assess Manually (for Small Business)"])
 
-try:
-    # Try to get the key from Streamlit's secrets (for deployed app)
-    api_key = st.secrets['FMP_KEY']
-    st.sidebar.success("API Key loaded from Secrets!", icon="✅")
-except:
-    # If it fails (we are local), show the text box
-    st.sidebar.markdown("""
-    [Get your free FMP API key](https://site.financialmodelingprep.com/developer)
-    """)
-    api_key = st.sidebar.text_input("Financial Modeling Prep API Key", type="password")
+# --- TAB 1: ASSESS BY TICKER (Our existing app) ---
+with tab1:
+    st.sidebar.header("Assess by Ticker")
+    ticker = st.sidebar.text_input("Company Ticker (e.g., AAPL)").upper()
+    api_key = "" # Initialize api_key
 
-# --- 8. Create the "Assess Risk" Button and Logic ---
-if st.button("Assess Risk"):
-    if not api_key or not ticker:
-        st.warning("Please enter both a Ticker and an API Key.")
-    else:
-        with st.spinner(f"Fetching financial data for {ticker}..."):
-            raw_data, report_date = get_financial_data(ticker, api_key)
-        
-        if raw_data is None:
-            st.error("Could not fetch data. Check the Ticker or API Key. (Note: Free API is limited).")
+    try:
+        api_key = st.secrets['FMP_KEY']
+        st.sidebar.success("API Key loaded from Secrets!", icon="✅")
+    except:
+        st.sidebar.markdown("""
+        [Get your free FMP API key](https://site.financialmodelingprep.com/developer)
+        """)
+        api_key = st.sidebar.text_input("Financial Modeling Prep API Key", type="password")
+
+    if st.button("Assess Ticker Risk"):
+        if not api_key or not ticker:
+            st.warning("Please enter both a Ticker and an API Key.")
         else:
-            st.success(f"Successfully fetched data from report date: {report_date}")
+            with st.spinner(f"Fetching financial data for {ticker}..."):
+                raw_data, report_date = get_financial_data(ticker, api_key)
             
-            # 2. Calculate Ratios
-            current_ratio = raw_data['current_assets'] / (raw_data['current_liabilities'] + 1e-6)
-            debt_to_equity = raw_data['total_debt'] / (raw_data['total_equity'] + 1e-6)
-            interest_coverage_ratio = raw_data['ebit'] / (raw_data['interest_expense'] + 1e-6)
-            net_profit_margin = raw_data['net_income'] / (raw_data['total_revenue'] + 1e-6)
+            if raw_data is None:
+                st.error("Could not fetch data. Check the Ticker or API Key. (Note: Free API is limited).")
+            else:
+                st.success(f"Successfully fetched data from report date: {report_date}")
+                
+                # Calculate Ratios
+                current_ratio = raw_data['current_assets'] / (raw_data['current_liabilities'] + 1e-6)
+                debt_to_equity = raw_data['total_debt'] / (raw_data['total_equity'] + 1e-6)
+                interest_coverage_ratio = raw_data['ebit'] / (raw_data['interest_expense'] + 1e-6)
+                net_profit_margin = raw_data['net_income'] / (raw_data['total_revenue'] + 1e-6)
 
-            # 3. Prepare Data for Model & Plot
-            
-            # Create a DataFrame for the UN-SCALED values (for the plot)
-            # We round them to 2 decimal places for a clean look
-            unscaled_data = {
-                'current_ratio': [round(current_ratio, 2)],
-                'debt_to_equity': [round(debt_to_equity, 2)],
-                'interest_coverage_ratio': [round(interest_coverage_ratio, 2)],
-                'net_profit_margin': [round(net_profit_margin, 2)]
-            }
-            unscaled_features_df = pd.DataFrame(unscaled_data, columns=feature_names)
-            
-            # Create a DataFrame for the SCALED values (for the model & explainer)
-            # Note: We scale the un-rounded values for accuracy
-            unrounded_features = np.array([current_ratio, debt_to_equity, interest_coverage_ratio, net_profit_margin])
-            scaled_features = scaler.transform(unrounded_features.reshape(1, -1))
-            scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
+                # --- 3. Prepare Data for Model & Plot ---
+                unscaled_data = {
+                    'current_ratio': [round(current_ratio, 2)],
+                    'debt_to_equity': [round(debt_to_equity, 2)],
+                    'interest_coverage_ratio': [round(interest_coverage_ratio, 2)],
+                    'net_profit_margin': [round(net_profit_margin, 2)]
+                }
+                unscaled_features_df = pd.DataFrame(unscaled_data, columns=feature_names)
+                
+                unrounded_features = np.array([current_ratio, debt_to_equity, interest_coverage_ratio, net_profit_margin])
+                scaled_features = scaler.transform(unrounded_features.reshape(1, -1))
+                scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
 
-            # 4. Make Prediction
-            prediction_prob = model.predict_proba(scaled_features_df)
-            prob_of_default = prediction_prob[0][1]
-            
-            # --- 5. Display the Result ---
-            st.subheader(f"Risk Assessment Result for {ticker}:")
-            st.metric(label="Probability of Bankruptcy", value=f"{prob_of_default * 100:.2f}%")
+                # --- 4. Make Prediction ---
+                prediction_prob = model.predict_proba(scaled_features_df)
+                prob_of_default = prediction_prob[0][1]
+                
+                # --- 5. Display the Result ---
+                st.subheader(f"Risk Assessment Result for {ticker}:")
+                st.metric(label="Probability of Bankruptcy", value=f"{prob_of_default * 100:.2f}%")
 
-            if prob_of_default > 0.5: st.error("Risk Level: High Risk")
-            elif prob_of_default > 0.2: st.warning("Risk Level: Moderate Risk")
-            else: st.success("Risk Level: Low Risk")
+                if prob_of_default > 0.5: st.error("Risk Level: High Risk")
+                elif prob_of_default > 0.2: st.warning("Risk Level: Moderate Risk")
+                else: st.success("Risk Level: Low Risk")
 
-            with st.expander("Show Calculated Ratios"):
-                st.write(f"Current Ratio: {current_ratio:.2f}")
-                st.write(f"Debt-to-Equity: {debt_to_equity:.2f}")
-                st.write(f"Interest Coverage Ratio: {interest_coverage_ratio:.2f}")
-                st.write(f"Net Profit Margin: {net_profit_margin:.2f}")
+                with st.expander("Show Calculated Ratios"):
+                    st.write(f"Current Ratio: {current_ratio:.2f}")
+                    st.write(f"Debt-to-Equity: {debt_to_equity:.2f}")
+                    st.write(f"Interest Coverage Ratio: {interest_coverage_ratio:.2f}")
+                    st.write(f"Net Profit Margin: {net_profit_margin:.2f}")
 
-         # --- 6. SHAP Explainability Plot (FINAL FIX) ---
-            st.subheader("Why did the model decide this?")
-            st.write("This plot shows which features contributed to the final risk score.")
-            
-            # Calculate SHAP values (explainer needs the scaled DataFrame)
-            shap_values_object = explainer(scaled_features_df)
-            
-            # We want the values for Class 1 (Bankruptcy)
-            shap_values_for_class_1 = shap_values_object.values[0,:,1]
-            base_value_for_class_1 = shap_values_object.base_values[0,1]
+                # --- 6. SHAP Explainability Plot ---
+                st.subheader("Why did the model decide this?")
+                st.write("This plot shows which features contributed to the final risk score.")
+                
+                shap_values_object = explainer(scaled_features_df)
+                shap_values_for_class_1 = shap_values_object.values[0,:,1]
+                base_value_for_class_1 = shap_values_object.base_values[0,1]
+                
+                plt.rcParams.update({'font.size': 8.5})
+                
+                fig = shap.force_plot(
+                    base_value=base_value_for_class_1,
+                    shap_values=shap_values_for_class_1,
+                    features=unscaled_features_df.iloc[0], 
+                    feature_names=unscaled_features_df.columns,
+                    matplotlib=True,
+                    show=False,
+                    figsize=(14, 4)
+                )
+                
+                plt.tight_layout()
+                st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
+                plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
+                plt.close(fig) 
+                
+                st.caption("These are the SHAP values...")
 
-            # --- FIX FOR OVERLAP & READABILITY ---
-            
-            # 1. Set a smaller font size *before* creating the plot
-            plt.rcParams.update({'font.size': 8}) # Small font
+# --- TAB 2: ASSESS MANUALLY (Our new feature) ---
+with tab2:
+    st.subheader("Manual Risk Assessment")
+    st.write("Enter the four key financial ratios for your company.")
 
-            # 2. Tell shap to create the plot
-            shap.force_plot(
-                base_value=base_value_for_class_1,
-                shap_values=shap_values_for_class_1,
-                # Pass the CLEAN, UN-SCALED features for display
-                features=unscaled_features_df.iloc[0], 
-                feature_names=unscaled_features_df.columns,
-                matplotlib=True,
-                show=False,
-                text_rotation=10 # Angle the text slightly
-            )
-            
-            # 3. Get the current figure that shap just created
-            fig = plt.gcf() 
-            
-            # 4. Set our larger dimensions
-            fig.set_figheight(3) 
-            fig.set_figwidth(12) 
-            
-            # 5. Pass the FIGURE to st.pyplot
-            st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
-            
-            # 6. Reset font size to default (good practice)
-            plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
-            
-            plt.close(fig) # Close the figure
-            
-            # --- END OF FIX ---
-            
-            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
+    with st.form("manual_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            # We use 1.0 as a default to avoid errors
+            current_ratio = st.number_input("Current Ratio", min_value=-10.0, value=1.0, step=0.1)
+            debt_to_equity = st.number_input("Debt-to-Equity Ratio", min_value=-10.0, value=1.0, step=0.1)
+        with col2:
+            interest_coverage_ratio = st.number_input("Interest Coverage Ratio", min_value=-10.0, value=1.0, step=0.1)
+            net_profit_margin = st.number_input("Net Profit Margin (as a decimal, e.g., 0.15)", min_value=-10.0, value=0.1, step=0.01)
+
+        submitted = st.form_submit_button("Assess Manual Risk")
+
+    if submitted:
+        # --- 3. Prepare Data for Model & Plot ---
+        unscaled_data = {
+            'current_ratio': [round(current_ratio, 2)],
+            'debt_to_equity': [round(debt_to_equity, 2)],
+            'interest_coverage_ratio': [round(interest_coverage_ratio, 2)],
+            'net_profit_margin': [round(net_profit_margin, 2)]
+        }
+        unscaled_features_df = pd.DataFrame(unscaled_data, columns=feature_names)
+        
+        unrounded_features = np.array([current_ratio, debt_to_equity, interest_coverage_ratio, net_profit_margin])
+        scaled_features = scaler.transform(unrounded_features.reshape(1, -1))
+        scaled_features_df = pd.DataFrame(scaled_features, columns=feature_names)
+
+        # --- 4. Make Prediction ---
+        prediction_prob = model.predict_proba(scaled_features_df)
+        prob_of_default = prediction_prob[0][1]
+        
+        # --- 5. Display the Result ---
+        st.subheader("Risk Assessment Result (Manual):")
+        st.metric(label="Probability of Bankruptcy", value=f"{prob_of_default * 100:.2f}%")
+
+        if prob_of_default > 0.5: st.error("Risk Level: High Risk")
+        elif prob_of_default > 0.2: st.warning("Risk Level: Moderate Risk")
+        else: st.success("Risk Level: Low Risk")
+
+        # --- 6. SHAP Explainability Plot ---
+        st.subheader("Why did the model decide this?")
+        st.write("This plot shows which features contributed to the final risk score.")
+        
+        shap_values_object = explainer(scaled_features_df)
+        shap_values_for_class_1 = shap_values_object.values[0,:,1]
+        base_value_for_class_1 = shap_values_object.base_values[0,1]
+        
+        plt.rcParams.update({'font.size': 8.5})
+        
+        fig = shap.force_plot(
+            base_value=base_value_for_class_1,
+            shap_values=shap_values_for_class_1,
+            features=unscaled_features_df.iloc[0], 
+            feature_names=unscaled_features_df.columns,
+            matplotlib=True,
+            show=False,
+            figsize=(14, 4)
+        )
+        
+        plt.tight_layout()
+        st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
+        plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
+        plt.close(fig) 
+        
+        st.caption("These are the SHAP values...")
