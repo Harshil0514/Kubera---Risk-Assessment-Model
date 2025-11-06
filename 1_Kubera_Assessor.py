@@ -170,31 +170,27 @@ if st.button("Assess Risk"):
             # --- FIX FOR OVERLAP & READABILITY ---
             
             # 1. Set a smaller font size *before* creating the plot
-            plt.rcParams.update({'font.size': 8}) # Small font
+            plt.rcParams.update({'font.size': 8.5}) # Small font
 
-            # 2. Tell shap to create the plot
-            shap.force_plot(
+            # 2. Tell shap to create the plot and PASS figsize
+            #    When show=False and matplotlib=True, shap.force_plot RETURNS the figure
+            fig = shap.force_plot(
                 base_value=base_value_for_class_1,
                 shap_values=shap_values_for_class_1,
-                # Pass the CLEAN, UN-SCALED features for display
                 features=unscaled_features_df.iloc[0], 
                 feature_names=unscaled_features_df.columns,
                 matplotlib=True,
                 show=False,
-                text_rotation=10 # Angle the text slightly
+                figsize=(14, 4) # Set figsize directly (width, height)
             )
             
-            # 3. Get the current figure that shap just created
-            fig = plt.gcf() 
+            # 3. Apply tight layout to fix overlaps
+            plt.tight_layout()
             
-            # 4. Set our larger dimensions
-            fig.set_figheight(3) 
-            fig.set_figwidth(12) 
-            
-            # 5. Pass the FIGURE to st.pyplot
+            # 4. Pass the FIGURE to st.pyplot
             st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
             
-            # 6. Reset font size to default (good practice)
+            # 5. Reset font size to default (good practice)
             plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
             
             plt.close(fig) # Close the figure
