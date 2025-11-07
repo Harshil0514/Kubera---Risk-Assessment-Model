@@ -157,7 +157,7 @@ with tab1:
                 st.subheader("Why did the model decide this?")
                 st.write("This plot shows which features contributed to the final risk score.")
                 
-                shap_values_object = explainer(scaled_features_df)
+                shap_values_object = explainer(scaled_features_df.values)
                 shap_values_for_class_1 = shap_values_object.values[0,:,1]
                 base_value_for_class_1 = shap_values_object.base_values[0,1]
                 
@@ -249,7 +249,7 @@ with tab2:
             st.write("This plot shows which features contributed to the final risk score.")
             
             # Calculate SHAP values (explainer needs the scaled DataFrame)
-            shap_values_object = explainer(scaled_features_df)
+            shap_values_object = explainer(scaled_features_df.values)
             
             # We want the values for Class 1 (Bankruptcy)
             shap_values_for_class_1 = shap_values_object.values[0,:,1]
