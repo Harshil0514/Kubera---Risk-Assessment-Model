@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 # --- 2. Set Page Configuration ---
 st.set_page_config(
     page_title="Kubera Risk Assessor",
-    page_icon="🔥",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -244,29 +244,49 @@ with tab2:
             st.write(f"Interest Coverage Ratio: {interest_coverage_ratio:.2f}")
             st.write(f"Net Profit Margin: {net_profit_margin:.2f}")
 
-        # --- 5. SHAP Explainability Plot ---
-        st.subheader("Why did the model decide this?")
-        st.write("This plot shows which features contributed to the final risk score.")
-        
-        shap_values_object = explainer(scaled_features_df)
-        shap_values_for_class_1 = shap_values_object.values[0,:,1]
-        base_value_for_class_1 = shap_values_object.base_values[0,1]
-        
-        plt.rcParams.update({'font.size': 8.5})
-        
-        fig = shap.force_plot(
-            base_value=base_value_for_class_1,
-            shap_values=shap_values_for_class_1,
-            features=unscaled_features_df.iloc[0], 
-            feature_names=unscaled_features_df.columns,
-            matplotlib=True,
-            show=False,
-            figsize=(14, 4)
-        )
-        
-        plt.tight_layout()
-        st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
-        plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
-        plt.close(fig) 
-        
-        st.caption("These are the SHAP values...")
+        # --- 6. SHAP Explainability Plot (FINAL FIX) ---
+            st.subheader("Why did the model decide this?")
+            st.write("This plot shows which features contributed to the final risk score.")
+            
+            # Calculate SHAP values (explainer needs the scaled DataFrame)
+            shap_values_object = explainer(scaled_features_df)
+            
+            # We want the values for Class 1 (Bankruptcy)
+            shap_values_for_class_1 = shap_values_object.values[0,:,1]
+            base_value_for_class_1 = shap_values_object.base_values[0,1]
+
+            # --- FIX FOR OVERLAP & READABILITY ---
+            
+            # 1. Set a smaller font size *before* creating the plot
+            plt.rcParams.update({'font.size': 8}) # Small font
+
+            # 2. Tell shap to create the plot
+            shap.force_plot(
+                base_value=base_value_for_class_1,
+                shap_values=shap_values_for_class_1,
+                # Pass the CLEAN, UN-SCALED features for display
+                features=unscaled_features_df.iloc[0], 
+                feature_names=unscaled_features_df.columns,
+                matplotlib=True,
+                show=False,
+                text_rotation=10 # Angle the text slightly
+            )
+            
+            # 3. Get the current figure that shap just created
+            fig = plt.gcf() 
+            
+            # 4. Set our larger dimensions
+            fig.set_figheight(3) 
+            fig.set_figwidth(12) 
+            
+            # 5. Pass the FIGURE to st.pyplot
+            st.pyplot(fig, bbox_inches='tight', pad_inches=0.1) 
+            
+            # 6. Reset font size to default (good practice)
+            plt.rcParams.update({'font.size': plt.rcParamsDefault['font.size']})
+            
+            plt.close(fig) # Close the figure
+            
+            # --- END OF FIX ---
+            
+            st.caption("These are the SHAP values for the 'Probability of Bankruptcy' (Class 1). Features pushing the score higher (to 'High Risk') are in red. Features pushing lower are in blue.")
