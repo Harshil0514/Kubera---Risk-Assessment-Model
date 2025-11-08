@@ -130,9 +130,10 @@ if model is not None:
             matplotlib=True,
             show=False,
             # INCREASED FIGURE SIZE FOR READABILITY
-            figsize=(18, 5) # Increased width to 18, height to 5
-        )
-        
+            figsize=(18, 6), # Increased width to 18, height to 6
+            # ADDED TEXT ROTATION
+            text_rotation=15 # Tilt the feature labels by 15 degrees
+        ) 
         # Get the current axes to rotate labels
         ax = fig.gca() 
         
