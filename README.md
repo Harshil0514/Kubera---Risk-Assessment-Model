@@ -40,19 +40,20 @@ Explainable AI (XAI):
 
      To solve this, I first trained an XGBoost model on all 95 features. I then extracted the feature_importances_ to identify the Top 10 most predictive features. A new, final model          was then trained only on these 10 features, resulting in a model that is both highly accurate and efficient.
 
-  The Top 10 Features were:
-      1) Continuous Interest Rate (After Tax)
-      2) Total Debt/Total Net Worth
-      3) Debt Ratio %
-      4) Persistent EPS in the Last Four Seasons
-      5) Borrowing Dependency
-      6) Net Value Per Share (C)
-      7) Interest Expense Ratio
-      8) Revenue Per Share (Yuan ¥)
-      9) Operating Profit Rate
-      10) Retained Earnings to Total Assets
+     The Top 10 Features were:
+     1) Continuous Interest Rate (After Tax)
+     2) Total Debt/Total Net Worth
+     3) Debt Ratio %
+     4) Persistent EPS in the Last Four Seasons
+     5) Borrowing Dependency
+     6) Net Value Per Share (C)
+     7) Interest Expense Ratio
+     8) Revenue Per Share (Yuan ¥)
+     9) Operating Profit Rate
+     10) Retained Earnings to Total Assets
 
-2) Model Performance -
+
+  2) Model Performance -
         
       The final model was evaluated on a 20% hold-out test set. The performance proves its ability to find complex, non-linear patterns in financial data.
         
@@ -62,6 +63,6 @@ Explainable AI (XAI):
      Recall     40.91%    The model successfully catches 41% of all actual bankruptcies.
       
      
-3) Performance Analysis -
+  3) Performance Analysis -
 
       The most important metric for a risk model is Recall, as failing to predict a bankruptcy (a false negative) is the most costly business error. A Recall of 41% is a strong                 baseline. The next step for this project would be to tune hyperparameters specifically to optimize for higher Recall (e.g., by adjusting scale_pos_weight), even if it means               slightly lowering the overall 96% accuracy. This shows a "business-first" approach to model optimization.
