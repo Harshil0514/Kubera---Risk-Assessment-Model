@@ -71,18 +71,17 @@ if model is not None:
         cols = st.columns(2)
         
         for i, feature in enumerate(feature_names):
-            # This is a clever way to dynamically fill the columns
-            # 0, 2, 4, 6, 8 go in col 0.  1, 3, 5, 7, 9 go in col 1.
             current_col = cols[i % 2] 
             
             # Create a user-friendly label
             label = feature.replace("_", " ").replace("Attr", "Feature ").title()
+            # NEW: Manually change "Yuan" to "Dollar" for a cleaner look
+            label = label.replace("Revenue Per Share (Yuan ¥)", "Revenue Per Share (Dollar $)")
             
-            # Store the user's input
+            # Store the user's input using the ORIGINAL feature name
             inputs[feature] = current_col.number_input(label, value=0.0, step=0.01, format="%.4f")
 
         submitted = st.form_submit_button("Assess Real Data Risk")
-
     if submitted:
         # --- 1. Prepare Data ---
         # Convert the dictionary of inputs into a 2D numpy array in the correct order
@@ -122,18 +121,24 @@ if model is not None:
         # 1. Set a smaller font size *before* creating the plot
         plt.rcParams.update({'font.size': 8}) # Slightly smaller for labels
 
+       # Create a new, clean list of feature names for the plot
+        clean_plot_labels = []
+        for f in unscaled_features_df.columns:
+            label = f.replace("_", " ").replace("Attr", "Feature ").title()
+            label = label.replace("Revenue Per Share (Yuan ¥)", "Revenue Per Share (Dollar $)")
+            clean_plot_labels.append(label)
+
         fig = shap.force_plot(
             base_value=base_value_for_class_1,
             shap_values=shap_values_for_class_1,
             features=unscaled_features_df.iloc[0], 
-            feature_names=unscaled_features_df.columns,
+            # Use our new clean list for the plot labels
+            feature_names=clean_plot_labels,
             matplotlib=True,
             show=False,
-            # INCREASED FIGURE SIZE FOR READABILITY
-            figsize=(18, 6), # Increased width to 18, height to 6
-            # ADDED TEXT ROTATION
-            text_rotation=15 # Tilt the feature labels by 15 degrees
-        ) 
+            figsize=(18, 6),
+            text_rotation=15
+        )
         # Get the current axes to rotate labels
         ax = fig.gca() 
         
