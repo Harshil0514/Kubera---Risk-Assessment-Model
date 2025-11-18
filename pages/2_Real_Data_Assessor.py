@@ -155,6 +155,12 @@ if model is not None:
         
         # --- CHANGES END HERE ---
         
-        st.caption("These are the SHAP values...")
+        # --- Professional Caption ---
+        st.caption("""
+            **How to read this plot:**
+            * **Red bars** (→) represent features that are pushing the risk **HIGHER** (bad for the company).
+            * **Blue bars** (←) represent features that are pushing the risk **LOWER** (good for the company).
+            * The **length** of the bar indicates the strength of that feature's impact on the final decision.
+        """)
 else:
     st.error("Model assets are missing. Please run `python train_real_model.py` and refresh.")
