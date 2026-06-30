@@ -17,27 +17,26 @@ Kubera is a production-ready, dual-engine financial risk software application en
 
 ## 📊 Pipeline & System Topology
 
-┌───────────────────────────────────────────────┐
-                   │       Stateful Multi-Page Streamlit UI        │
-                   └───────────────────────┬───────────────────────┘
-                                           │
-                   ┌───────────────────────┴───────────────────────┐
-                   ▼                                               ▼
-      [ Engine 1: Real-World Assessor ]              [ Engine 2: Live Market Assessor ]
-                   │                                               │
-                   ▼                                               ▼
-       Vectorized User Inputs (10 Ratios)             Dynamic Ticker Query Execution (e.g., AAPL)
-                   │                                               │
-                   ▼                                               ▼
-      Pre-trained XGBoost Model Execution             Upstream REST Call to FMP Cloud API Gateway
-                   │                                               │
-                   ▼                                               ▼
-    SHAP TreeExplainer Local Attribution              JSON Payload Deserialization & Structural Parsing
-                   │                                               │
-                   ▼                                               ▼
-     Matplotlib Rendered Force Plot UI                Z-Score & Liquidity Financial Evaluation Matrix
-
-     
+```text
+                       ┌───────────────────────────────────────────────┐
+                       │       Stateful Multi-Page Streamlit UI        │
+                       └───────────────────────┬───────────────────────┘
+                                               │
+                       ┌───────────────────────┴───────────────────────┐
+                       ▼                                               ▼
+          [ Engine 1: Real-World Assessor ]              [ Engine 2: Live Market Assessor ]
+                       │                                               │
+                       ▼                                               ▼
+           Vectorized User Inputs (10 Ratios)             Dynamic Ticker Query Execution (e.g., AAPL)
+                       │                                               │
+                       ▼                                               ▼
+          Pre-trained XGBoost Model Execution             Upstream REST Call to FMP Cloud API Gateway
+                       │                                               │
+                       ▼                                               ▼
+        SHAP TreeExplainer Local Attribution              JSON Payload Deserialization & Structural Parsing
+                       │                                               │
+                       ▼                                               ▼
+         Matplotlib Rendered Force Plot UI                Z-Score & Liquidity Financial Evaluation Matrix
 
 ## 🔬 Deep Technical Breakdown (For Engineering Recruiters)
 
