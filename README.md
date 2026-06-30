@@ -16,6 +16,7 @@ Kubera is a production-ready, dual-engine financial risk software application en
 ---
 
 ## 📊 Pipeline & System Topology
+## 📊 Pipeline & System Topology
 
 ```text
                        ┌───────────────────────────────────────────────┐
@@ -36,8 +37,8 @@ Kubera is a production-ready, dual-engine financial risk software application en
         SHAP TreeExplainer Local Attribution              JSON Payload Deserialization & Structural Parsing
                        │                                               │
                        ▼                                               ▼
-         Matplotlib Rendered Force Plot UI                Z-Score & Liquidity Financial Evaluation Matrix  **` ``` `**
-
+         Matplotlib Rendered Force Plot UI                Z-Score & Liquidity Financial Evaluation Matrix
+```
 
 ## 🔬 Deep Technical Breakdown (For Engineering Recruiters)
 
