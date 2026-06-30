@@ -14,8 +14,6 @@ Kubera is a production-ready, dual-engine financial risk software application en
 * **Infrastructure & Security:** Git, Streamlit Cloud Enterprise Staging, Secure Environment Variables via `.streamlit/secrets.toml`
 
 ---
-
-## 📊 Pipeline & System Topology
 ## 📊 Pipeline & System Topology
 
 ```text
