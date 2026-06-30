@@ -37,7 +37,7 @@ Kubera is a production-ready, dual-engine financial risk software application en
                    ▼                                               ▼
      Matplotlib Rendered Force Plot UI                Z-Score & Liquidity Financial Evaluation Matrix
 
-     ---
+     
 
 ## 🔬 Deep Technical Breakdown (For Engineering Recruiters)
 
