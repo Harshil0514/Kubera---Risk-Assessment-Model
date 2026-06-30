@@ -43,13 +43,9 @@ Kubera is a production-ready, dual-engine financial risk software application en
 ## 🔬 Deep Technical Breakdown (For Engineering Recruiters)
 
 ### 1. Mathematical Handling of Severe Class Imbalance
-In corporate default datasets, bankruptcy events represent a minor fraction of historical data ($< 5\%$ positive target instances vs. $> 95\%$ healthy enterprise instances). Optimizing a standard binary cross-entropy loss function on this data creates an unviable model that aggressively biases toward majority-class predictions:
+In corporate default datasets, bankruptcy events represent a minor fraction of historical data (< 5% positive target instances vs. > 95% healthy enterprise instances). Optimizing a standard binary cross-entropy loss function on this data creates an unviable model that aggressively biases toward majority-class predictions:
 
 $$\mathcal{L} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \log(\hat{y}_i) + (1 - y_i) \log(1 - \hat{y}_i) \right]$$
-
-To force the optimization algorithm to penalize missed bankruptcies (False Negatives), a cost-sensitive loss wrapper was implemented using the `scale_pos_weight` hyperparameter inside the `XGBClassifier`, calculated as:
-
-$$\mathcal{L} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y\_i \log(\hat{y}\_i) + (1 - y\_i) \log(1 - \hat{y}\_i) \right]$$
 
 To force the optimization algorithm to penalize missed bankruptcies (False Negatives), a cost-sensitive loss wrapper was implemented using the `scale_pos_weight` hyperparameter inside the `XGBClassifier`, calculated as:
 
