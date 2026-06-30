@@ -49,6 +49,10 @@ $$\mathcal{L} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \log(\hat{y}_i) + (1 - y_
 
 To force the optimization algorithm to penalize missed bankruptcies (False Negatives), a cost-sensitive loss wrapper was implemented using the `scale_pos_weight` hyperparameter inside the `XGBClassifier`, calculated as:
 
+$$\mathcal{L} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y\_i \log(\hat{y}\_i) + (1 - y\_i) \log(1 - \hat{y}\_i) \right]$$
+
+To force the optimization algorithm to penalize missed bankruptcies (False Negatives), a cost-sensitive loss wrapper was implemented using the `scale_pos_weight` hyperparameter inside the `XGBClassifier`, calculated as:
+
 $$\text{scale\_pos\_weight} = \frac{\text{Total Negative Instances}}{\text{Total Positive Instances}}$$
 
 This structural adjustment penalizes errors on minority instances, raising model sensitivity during training.
